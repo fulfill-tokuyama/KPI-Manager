@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FocusEvent } from 'react';
 import { KpiData, KPI_LABELS, PRIMARY_KPI_KEYS } from '../lib/types';
 import { Save, Trash2, Star } from 'lucide-react';
+
+const selectOnFocus = (e: FocusEvent<HTMLInputElement>) => e.target.select();
 
 const INITIAL_DATA: KpiData = {
   date: new Date().toISOString().split('T')[0],
@@ -146,6 +148,7 @@ export default function InputPage() {
                   name={key}
                   value={(formData as any)[key]}
                   onChange={handleChange}
+                  onFocus={selectOnFocus}
                   min="0"
                   className="block w-full rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
                 />
@@ -166,6 +169,7 @@ export default function InputPage() {
                 name={key}
                 value={(formData as any)[key]}
                 onChange={handleChange}
+                onFocus={selectOnFocus}
                 min="0"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
               />

@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, FocusEvent } from 'react';
 import { KpiTarget, TARGET_KPI_LABELS } from '../lib/types';
 import { Save, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const selectOnFocus = (e: FocusEvent<HTMLInputElement>) => e.target.select();
 
 const TARGET_KEYS = Object.keys(TARGET_KPI_LABELS) as (keyof typeof TARGET_KPI_LABELS)[];
 
@@ -105,6 +107,7 @@ export default function Targets() {
                   min="0"
                   value={form[key]}
                   onChange={e => handleChange(key, e.target.value)}
+                  onFocus={selectOnFocus}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">目標</span>
