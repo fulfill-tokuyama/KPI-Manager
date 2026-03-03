@@ -30,6 +30,7 @@ export const KPI_LABELS: Record<keyof Omit<KpiData, 'date'>, string> = {
 
 export const PRIMARY_KPI_KEYS: (keyof Omit<KpiData, 'date'>)[] = [
   'leads_meetup',
+  'workshop_attended_companies',
   'diagnosis_done',
   'contracts_new',
   'cases_published',
@@ -39,14 +40,18 @@ export const PRIMARY_KPI_KEYS: (keyof Omit<KpiData, 'date'>)[] = [
 export interface KpiTarget {
   month: string; // YYYY-MM
   leads_meetup: number;
+  workshop_attended_companies: number;
   diagnosis_done: number;
+  diagnosis_conversion_rate: number; // AI診断移行率 (%)
   contracts_new: number;
   cases_published: number;
 }
 
 export const TARGET_KPI_LABELS: Record<keyof Omit<KpiTarget, 'month'>, string> = {
   leads_meetup: '経営者接点数',
+  workshop_attended_companies: '勉強会参加企業数',
   diagnosis_done: '診断実施数',
+  diagnosis_conversion_rate: 'AI診断移行率 (%)',
   contracts_new: '新規契約数',
   cases_published: '事例公開数',
 };

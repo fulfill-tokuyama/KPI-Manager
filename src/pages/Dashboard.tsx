@@ -20,7 +20,9 @@ interface Analytics {
 
 const PRIMARY_KPI_COLORS = [
   { bg: 'from-indigo-600 to-indigo-500', ring: 'ring-indigo-400/30' },
+  { bg: 'from-cyan-600 to-cyan-500', ring: 'ring-cyan-400/30' },
   { bg: 'from-violet-600 to-violet-500', ring: 'ring-violet-400/30' },
+  { bg: 'from-amber-600 to-amber-500', ring: 'ring-amber-400/30' },
   { bg: 'from-blue-600 to-blue-500', ring: 'ring-blue-400/30' },
   { bg: 'from-emerald-600 to-emerald-500', ring: 'ring-emerald-400/30' },
 ];
@@ -122,25 +124,31 @@ export default function Dashboard() {
             </Link>
           )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} target={target?.leads_meetup} />
+          <PrimaryKpiCard label="勉強会参加企業数" value={metrics.total_workshop_attended} unit="社" colorIndex={1} target={target?.workshop_attended_companies} />
           <PrimaryKpiCard
             label="月間診断実施数"
             value={diagCounts ? diagCounts.diagnosed : metrics.total_diagnosis_done}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={1} target={target?.diagnosis_done}
+            unit="件" colorIndex={2} target={target?.diagnosis_done}
+          />
+          <PrimaryKpiCard
+            label="AI診断移行率"
+            value={(metrics.diagnosis_conversion_rate * 100).toFixed(1)}
+            unit="%" colorIndex={3} target={target?.diagnosis_conversion_rate}
           />
           <PrimaryKpiCard
             label="月間新規契約数"
             value={diagCounts ? diagCounts.won : metrics.total_contracts_new}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={2} target={target?.contracts_new}
+            unit="件" colorIndex={4} target={target?.contracts_new}
           />
           <PrimaryKpiCard
             label="月間事例公開数"
             value={diagCounts ? diagCounts.case_published : metrics.total_cases_published}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={3} target={target?.cases_published}
+            unit="件" colorIndex={5} target={target?.cases_published}
           />
         </div>
       </div>
@@ -150,8 +158,6 @@ export default function Dashboard() {
         <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">その他の指標</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="勉強会申込率" value={(metrics.workshop_application_rate * 100).toFixed(1)} unit="%" />
-          <KpiCard label="勉強会参加企業数" value={metrics.total_workshop_attended} unit="社" />
-          <KpiCard label="AI診断移行率" value={(metrics.diagnosis_conversion_rate * 100).toFixed(1)} unit="%" />
           <KpiCard label="バックエンド契約率" value={(metrics.contract_rate * 100).toFixed(1)} unit="%" />
           <KpiCard label="月間MRR増分" value={metrics.total_mrr.toLocaleString()} unit="円" />
           <KpiCard label="平均単価" value={Math.round(metrics.average_unit_price).toLocaleString()} unit="円" />

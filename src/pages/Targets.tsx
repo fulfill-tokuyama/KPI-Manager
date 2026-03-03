@@ -23,7 +23,7 @@ export default function Targets() {
 
   const [month, setMonth] = useState(currentMonth);
   const [targets, setTargets] = useState<KpiTarget[]>([]);
-  const [form, setForm] = useState<KpiTarget>({ month, leads_meetup: 0, diagnosis_done: 0, contracts_new: 0, cases_published: 0 });
+  const [form, setForm] = useState<KpiTarget>({ month, leads_meetup: 0, workshop_attended_companies: 0, diagnosis_done: 0, diagnosis_conversion_rate: 0, contracts_new: 0, cases_published: 0 });
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -39,7 +39,7 @@ export default function Targets() {
     if (existing) {
       setForm(existing);
     } else {
-      setForm({ month, leads_meetup: 0, diagnosis_done: 0, contracts_new: 0, cases_published: 0 });
+      setForm({ month, leads_meetup: 0, workshop_attended_companies: 0, diagnosis_done: 0, diagnosis_conversion_rate: 0, contracts_new: 0, cases_published: 0 });
     }
   }, [month, targets]);
 

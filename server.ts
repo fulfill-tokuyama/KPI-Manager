@@ -240,10 +240,10 @@ async function startServer() {
 
   // --- KPI Targets Mock ---
   const MOCK_TARGETS = [
-    { month: '2024-01', leads_meetup: 30, diagnosis_done: 5, contracts_new: 3, cases_published: 1 },
-    { month: '2024-02', leads_meetup: 35, diagnosis_done: 6, contracts_new: 3, cases_published: 2 },
-    { month: '2024-03', leads_meetup: 40, diagnosis_done: 8, contracts_new: 4, cases_published: 2 },
-    { month: '2026-03', leads_meetup: 25, diagnosis_done: 8, contracts_new: 4, cases_published: 2 },
+    { month: '2024-01', leads_meetup: 30, workshop_attended_companies: 8, diagnosis_done: 5, diagnosis_conversion_rate: 62.5, contracts_new: 3, cases_published: 1 },
+    { month: '2024-02', leads_meetup: 35, workshop_attended_companies: 10, diagnosis_done: 6, diagnosis_conversion_rate: 60, contracts_new: 3, cases_published: 2 },
+    { month: '2024-03', leads_meetup: 40, workshop_attended_companies: 12, diagnosis_done: 8, diagnosis_conversion_rate: 66.7, contracts_new: 4, cases_published: 2 },
+    { month: '2026-03', leads_meetup: 25, workshop_attended_companies: 8, diagnosis_done: 8, diagnosis_conversion_rate: 100, contracts_new: 4, cases_published: 2 },
   ];
 
   app.get('/api/targets', (req, res) => {
