@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
-import { getAuthClient, getSpreadsheetId } from './_sheets';
+import { getAuthClient, getSpreadsheetId } from './_sheets.js';
 
 interface KpiTarget {
   month: string;

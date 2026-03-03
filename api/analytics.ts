@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
-import { getAuthClient, getSpreadsheetId } from './_sheets';
-import { MOCK_DIAGNOSES, DiagnosisRow, DIAGNOSIS_SHEET_COLUMNS } from './_diagnosis_mock';
+import { getAuthClient, getSpreadsheetId } from './_sheets.js';
+import { MOCK_DIAGNOSES, DiagnosisRow, DIAGNOSIS_SHEET_COLUMNS } from './_diagnosis_mock.js';
 
 const PIPELINE_STATUSES = ['diagnosed', 'proposed', 'quoted', 'won', 'in_progress', 'case_ready', 'case_published'];
 
