@@ -111,6 +111,39 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Monthly Target Summary */}
+      <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-lg font-semibold text-indigo-900">今月の目標値</h2>
+          </div>
+          <Link to="/targets" className="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-full font-medium transition-colors">
+            <Target className="w-3 h-3" />
+            {target ? '編集' : '設定する'}
+          </Link>
+        </div>
+        {target ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {(Object.keys(TARGET_KPI_LABELS) as (keyof typeof TARGET_KPI_LABELS)[]).map(key => (
+              <div key={key} className="text-center p-3 rounded-lg bg-white border border-indigo-100 shadow-sm">
+                <div className="text-xs font-medium text-indigo-400 mb-1">{TARGET_KPI_LABELS[key]}</div>
+                <div className="text-xl font-bold text-indigo-900">
+                  {target[key]}<span className="text-sm font-medium text-indigo-400 ml-0.5">{key === 'diagnosis_conversion_rate' ? '%' : ''}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-sm text-indigo-400">今月の目標が未設定です</p>
+            <Link to="/targets" className="inline-flex items-center gap-1 mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+              <Target className="w-4 h-4" />目標を設定してください
+            </Link>
+          </div>
+        )}
+      </div>
+
       {/* Primary KPIs */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -118,11 +151,6 @@ export default function Dashboard() {
             <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
             <h2 className="text-lg font-semibold text-gray-900">重要KPI実績値</h2>
           </div>
-          {!target && (
-            <Link to="/targets" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-              <Target className="w-3.5 h-3.5" />目標を設定
-            </Link>
-          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} target={target?.leads_meetup} />
@@ -151,33 +179,6 @@ export default function Dashboard() {
             unit="件" colorIndex={5} target={target?.cases_published}
           />
         </div>
-      </div>
-
-      {/* Monthly Target Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-base font-semibold text-gray-900">今月の目標値</h2>
-          </div>
-          <Link to="/targets" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-            {target ? '編集' : '設定する →'}
-          </Link>
-        </div>
-        {target ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {(Object.keys(TARGET_KPI_LABELS) as (keyof typeof TARGET_KPI_LABELS)[]).map(key => (
-              <div key={key} className="text-center p-2 rounded-lg bg-slate-50">
-                <div className="text-xs text-gray-500 mb-1">{TARGET_KPI_LABELS[key]}</div>
-                <div className="text-lg font-bold text-gray-900">
-                  {target[key]}{key === 'diagnosis_conversion_rate' ? '%' : ''}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">今月の目標が未設定です。<Link to="/targets" className="text-indigo-600 hover:underline">目標を設定</Link>してください。</p>
-        )}
       </div>
 
       {/* Secondary KPI Cards */}
