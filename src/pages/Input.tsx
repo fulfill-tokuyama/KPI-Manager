@@ -109,7 +109,7 @@ export default function InputPage() {
   return (
     <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-        <h2 className="text-lg font-medium text-gray-900">データ入力・編集</h2>
+        <h2 className="text-lg font-medium text-gray-900">KPI実績値入力</h2>
         <span className="text-xs text-gray-500">日付を選択すると既存データを読み込みます</span>
       </div>
       

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { calculateMetrics, filterDataByRange, KpiMetrics } from '../lib/kpi';
-import { KpiData, KpiTarget, ROUTE_LABELS } from '../lib/types';
+import { KpiData, KpiTarget, TARGET_KPI_LABELS, ROUTE_LABELS } from '../lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Star, Target } from 'lucide-react';
 
@@ -116,7 +116,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-            <h2 className="text-lg font-semibold text-gray-900">重要KPI</h2>
+            <h2 className="text-lg font-semibold text-gray-900">重要KPI実績値</h2>
           </div>
           {!target && (
             <Link to="/targets" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
@@ -153,9 +153,36 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Monthly Target Summary */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-base font-semibold text-gray-900">今月の目標値</h2>
+          </div>
+          <Link to="/targets" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+            {target ? '編集' : '設定する →'}
+          </Link>
+        </div>
+        {target ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {(Object.keys(TARGET_KPI_LABELS) as (keyof typeof TARGET_KPI_LABELS)[]).map(key => (
+              <div key={key} className="text-center p-2 rounded-lg bg-slate-50">
+                <div className="text-xs text-gray-500 mb-1">{TARGET_KPI_LABELS[key]}</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {target[key]}{key === 'diagnosis_conversion_rate' ? '%' : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">今月の目標が未設定です。<Link to="/targets" className="text-indigo-600 hover:underline">目標を設定</Link>してください。</p>
+        )}
+      </div>
+
       {/* Secondary KPI Cards */}
       <div>
-        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">その他の指標</h2>
+        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">その他の実績値</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="勉強会申込率" value={(metrics.workshop_application_rate * 100).toFixed(1)} unit="%" />
           <KpiCard label="バックエンド契約率" value={(metrics.contract_rate * 100).toFixed(1)} unit="%" />

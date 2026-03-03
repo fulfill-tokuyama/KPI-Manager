@@ -9,7 +9,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
     { href: '/diagnosis', label: 'AI診断', icon: ClipboardList },
-    { href: '/input', label: 'KPI入力', icon: PenTool },
+    { href: '/input', label: 'KPI実績値入力', icon: PenTool },
     { href: '/targets', label: '目標設定', icon: Target },
   ];
 
