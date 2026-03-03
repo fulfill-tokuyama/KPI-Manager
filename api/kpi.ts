@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
+import { getSheetsClient } from './_sheets.js';
 
 interface KpiData {
   date: string;
@@ -23,34 +23,15 @@ const MOCK_DATA: KpiData[] = [
   { date: '2024-01-01', leads_meetup: 30, workshop_applied: 10, workshop_attended_companies: 8, diagnosis_done: 5, proposals_sent: 4, contracts_new: 3, mrr: 300000, churned: 0, cases_published: 1, referrals: 2, leads_from_case: 5 },
 ];
 
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-
-function getAuthClient() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  if (!email || !key) return null;
-  return new google.auth.JWT({ email, key, scopes: SCOPES });
-}
-
 async function handleGet(res: VercelResponse) {
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-
-  if (!auth || !SPREADSHEET_ID) {
-    return res.json({ data: MOCK_DATA, isMock: true });
-  }
+  const client = await getSheetsClient();
+  if (!client) return res.json({ data: MOCK_DATA, isMock: true });
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'kpi_daily!A2:L',
-    });
-
+    const { sheets, spreadsheetId } = client;
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'kpi_daily!A2:L' });
     const rows = response.data.values;
-    if (!rows || rows.length === 0) {
-      return res.json({ data: [], isMock: false });
-    }
+    if (!rows || rows.length === 0) return res.json({ data: [], isMock: false });
 
     const data: KpiData[] = rows.map((row) => ({
       date: row[0],
@@ -66,71 +47,48 @@ async function handleGet(res: VercelResponse) {
       referrals: Number(row[10] || 0),
       leads_from_case: Number(row[11] || 0),
     }));
-
     res.json({ data, isMock: false });
   } catch (error) {
     console.error('Error fetching from Sheets:', error);
-    res.status(500).json({ error: 'Failed to fetch data' });
+    res.json({ data: MOCK_DATA, isMock: true });
   }
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   const newData: KpiData = req.body;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+  const client = await getSheetsClient();
 
-  if (!auth || !SPREADSHEET_ID) {
+  if (!client) {
     const existingIndex = MOCK_DATA.findIndex(d => d.date === newData.date);
-    if (existingIndex >= 0) {
-      MOCK_DATA[existingIndex] = newData;
-    } else {
-      MOCK_DATA.push(newData);
-    }
+    if (existingIndex >= 0) MOCK_DATA[existingIndex] = newData;
+    else MOCK_DATA.push(newData);
     return res.json({ success: true, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const getResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'kpi_daily!A:A',
-    });
-
+    const { sheets, spreadsheetId } = client;
+    const getResponse = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'kpi_daily!A:A' });
     const dateRows = getResponse.data.values || [];
     const rowIndex = dateRows.findIndex(row => row[0] === newData.date);
 
     const rowData = [
-      newData.date,
-      newData.leads_meetup,
-      newData.workshop_applied,
-      newData.workshop_attended_companies,
-      newData.diagnosis_done,
-      newData.proposals_sent,
-      newData.contracts_new,
-      newData.mrr,
-      newData.churned,
-      newData.cases_published,
-      newData.referrals,
-      newData.leads_from_case,
+      newData.date, newData.leads_meetup, newData.workshop_applied,
+      newData.workshop_attended_companies, newData.diagnosis_done, newData.proposals_sent,
+      newData.contracts_new, newData.mrr, newData.churned,
+      newData.cases_published, newData.referrals, newData.leads_from_case,
     ];
 
     if (rowIndex >= 0) {
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `kpi_daily!A${rowIndex + 1}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [rowData] },
+        spreadsheetId, range: `kpi_daily!A${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] },
       });
     } else {
       await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'kpi_daily!A:L',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [rowData] },
+        spreadsheetId, range: 'kpi_daily!A:L',
+        valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] },
       });
     }
-
     res.json({ success: true, isMock: false });
   } catch (error) {
     console.error('Error writing to Sheets:', error);
@@ -140,35 +98,22 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 
 async function handleDelete(req: VercelRequest, res: VercelResponse) {
   const { date } = req.body;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+  const client = await getSheetsClient();
 
-  if (!auth || !SPREADSHEET_ID) {
+  if (!client) {
     const index = MOCK_DATA.findIndex(d => d.date === date);
     if (index > -1) MOCK_DATA.splice(index, 1);
     return res.json({ success: true, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const getResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'kpi_daily!A:A',
-    });
-
+    const { sheets, spreadsheetId } = client;
+    const getResponse = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'kpi_daily!A:A' });
     const dateRows = getResponse.data.values || [];
     const rowIndex = dateRows.findIndex(row => row[0] === date);
+    if (rowIndex === -1) return res.status(404).json({ error: 'Date not found' });
 
-    if (rowIndex === -1) {
-      return res.status(404).json({ error: 'Date not found' });
-    }
-
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `kpi_daily!A${rowIndex + 1}:L${rowIndex + 1}`,
-    });
-
+    await sheets.spreadsheets.values.clear({ spreadsheetId, range: `kpi_daily!A${rowIndex + 1}:L${rowIndex + 1}` });
     res.json({ success: true, isMock: false });
   } catch (error) {
     console.error('Error deleting from Sheets:', error);

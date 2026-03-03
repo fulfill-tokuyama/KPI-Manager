@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
-import { getAuthClient, getSpreadsheetId } from './_sheets.js';
+import { getSheetsClient } from './_sheets.js';
 import { MOCK_DIAGNOSES, DiagnosisRow, DIAGNOSIS_SHEET_COLUMNS } from './_diagnosis_mock.js';
 
 const PIPELINE_STATUSES = ['diagnosed', 'proposed', 'quoted', 'won', 'in_progress', 'case_ready', 'case_published'];
@@ -64,26 +63,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { from, to } = req.query as Record<string, string | undefined>;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = getSpreadsheetId();
+  const client = await getSheetsClient();
 
-  if (!auth || !SPREADSHEET_ID) {
+  if (!client) {
     const analytics = computeAnalytics(MOCK_DIAGNOSES, from, to);
     return res.json({ data: analytics, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'diagnosis!A2:P',
-    });
+    const { sheets, spreadsheetId } = client;
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'diagnosis!A2:P' });
     const rows = response.data.values || [];
     const all = rows.filter(r => r[0]).map(rowToObj);
     const analytics = computeAnalytics(all, from, to);
     res.json({ data: analytics, isMock: false });
   } catch (error) {
     console.error('Error computing analytics:', error);
-    res.status(500).json({ error: 'Failed to compute analytics' });
+    const analytics = computeAnalytics(MOCK_DIAGNOSES, from, to);
+    res.json({ data: analytics, isMock: true });
   }
 }

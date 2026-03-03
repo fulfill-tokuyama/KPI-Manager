@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
-import { getAuthClient, getSpreadsheetId } from './_sheets.js';
+import { getSheetsClient } from './_sheets.js';
 
 interface KpiTarget {
   month: string;
@@ -33,70 +32,56 @@ function rowToTarget(row: string[]): KpiTarget {
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
   const { month } = req.query as Record<string, string | undefined>;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = getSpreadsheetId();
+  const client = await getSheetsClient();
 
-  if (!auth || !SPREADSHEET_ID) {
+  if (!client) {
     const data = month ? MOCK_TARGETS.filter(t => t.month === month) : MOCK_TARGETS;
     return res.json({ data, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'kpi_targets!A2:G',
-    });
+    const { sheets, spreadsheetId } = client;
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'kpi_targets!A2:G' });
     const rows = response.data.values || [];
     let data = rows.filter(r => r[0]).map(rowToTarget);
     if (month) data = data.filter(t => t.month === month);
     res.json({ data, isMock: false });
   } catch (error) {
     console.error('Error fetching targets:', error);
-    res.status(500).json({ error: 'Failed to fetch targets' });
+    const data = month ? MOCK_TARGETS.filter(t => t.month === month) : MOCK_TARGETS;
+    res.json({ data, isMock: true });
   }
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   const body: KpiTarget = req.body;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = getSpreadsheetId();
-
   if (!body.month) return res.status(400).json({ error: 'month is required' });
 
-  if (!auth || !SPREADSHEET_ID) {
+  const client = await getSheetsClient();
+
+  if (!client) {
     const idx = MOCK_TARGETS.findIndex(t => t.month === body.month);
-    if (idx >= 0) {
-      MOCK_TARGETS[idx] = body;
-    } else {
-      MOCK_TARGETS.push(body);
-    }
+    if (idx >= 0) MOCK_TARGETS[idx] = body;
+    else MOCK_TARGETS.push(body);
     return res.json({ success: true, data: body, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const getResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'kpi_targets!A:A',
-    });
+    const { sheets, spreadsheetId } = client;
+    const getResponse = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'kpi_targets!A:A' });
     const monthRows = getResponse.data.values || [];
     const rowIndex = monthRows.findIndex(row => row[0] === body.month);
     const rowData = [body.month, body.leads_meetup, body.workshop_attended_companies, body.diagnosis_done, body.diagnosis_conversion_rate, body.contracts_new, body.cases_published];
 
     if (rowIndex >= 0) {
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `kpi_targets!A${rowIndex + 1}:G${rowIndex + 1}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [rowData] },
+        spreadsheetId, range: `kpi_targets!A${rowIndex + 1}:G${rowIndex + 1}`,
+        valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] },
       });
     } else {
       await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'kpi_targets!A:G',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [rowData] },
+        spreadsheetId, range: 'kpi_targets!A:G',
+        valueInputOption: 'USER_ENTERED', requestBody: { values: [rowData] },
       });
     }
     res.json({ success: true, data: body, isMock: false });

@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
-import { getAuthClient, getSpreadsheetId } from './_sheets.js';
+import { getSheetsClient } from './_sheets.js';
 import { MOCK_DIAGNOSES, DiagnosisRow, DIAGNOSIS_SHEET_COLUMNS } from './_diagnosis_mock.js';
 
 function rowToObj(row: string[]): DiagnosisRow {
@@ -33,35 +32,30 @@ function matchesFilter(d: DiagnosisRow, query: Record<string, string | undefined
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse) {
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = getSpreadsheetId();
   const query = req.query as Record<string, string | undefined>;
+  const client = await getSheetsClient();
 
-  if (!auth || !SPREADSHEET_ID) {
+  if (!client) {
     const filtered = MOCK_DIAGNOSES.filter(d => matchesFilter(d, query));
     return res.json({ data: filtered, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'diagnosis!A2:P',
-    });
+    const { sheets, spreadsheetId } = client;
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'diagnosis!A2:P' });
     const rows = response.data.values || [];
     const all = rows.filter(r => r[0]).map(rowToObj);
     const filtered = all.filter(d => matchesFilter(d, query));
     res.json({ data: filtered, isMock: false });
   } catch (error) {
     console.error('Error fetching diagnoses:', error);
-    res.status(500).json({ error: 'Failed to fetch diagnoses' });
+    const filtered = MOCK_DIAGNOSES.filter(d => matchesFilter(d, query));
+    res.json({ data: filtered, isMock: true });
   }
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   const body = req.body;
-  const auth = getAuthClient();
-  const SPREADSHEET_ID = getSpreadsheetId();
   const now = new Date().toISOString().split('T')[0];
 
   const newRow: DiagnosisRow = {
@@ -83,18 +77,17 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     updated_at: now,
   };
 
-  if (!auth || !SPREADSHEET_ID) {
+  const client = await getSheetsClient();
+  if (!client) {
     MOCK_DIAGNOSES.push(newRow);
     return res.json({ success: true, data: newRow, isMock: true });
   }
 
   try {
-    const sheets = google.sheets({ version: 'v4', auth });
+    const { sheets, spreadsheetId } = client;
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'diagnosis!A:P',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [objToRow(newRow)] },
+      spreadsheetId, range: 'diagnosis!A:P',
+      valueInputOption: 'USER_ENTERED', requestBody: { values: [objToRow(newRow)] },
     });
     res.json({ success: true, data: newRow, isMock: false });
   } catch (error) {
