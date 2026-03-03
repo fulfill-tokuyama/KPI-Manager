@@ -202,12 +202,14 @@ export default function InputPage() {
         </div>
 
         {status === 'success' && (
-          <div className="rounded-md bg-green-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">保存しました</p>
-              </div>
-            </div>
+          <div className="rounded-md bg-green-50 border border-green-200 p-4">
+            <p className="text-sm font-medium text-green-800">保存しました</p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="rounded-md bg-red-50 border border-red-200 p-4">
+            <p className="text-sm font-medium text-red-800">保存に失敗しました。もう一度お試しください。</p>
           </div>
         )}
       </form>
