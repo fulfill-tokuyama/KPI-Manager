@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { calculateMetrics, filterDataByRange, KpiMetrics } from '../lib/kpi';
-import { KpiData } from '../lib/types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { KpiData, ROUTE_LABELS } from '../lib/types';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Star } from 'lucide-react';
+
+interface Analytics {
+  total: number;
+  diagnosed_count: number;
+  proposed_count: number;
+  quoted_count: number;
+  won_count: number;
+  case_published_count: number;
+  lost_count: number;
+  on_hold_count: number;
+  by_route: { dispatch: number; training: number; aio: number };
+  by_source: { meetup: number; sns: number; referral: number; other: number };
+}
 
 const PRIMARY_KPI_COLORS = [
   { bg: 'from-indigo-600 to-indigo-500', ring: 'ring-indigo-400/30' },
@@ -11,18 +24,24 @@ const PRIMARY_KPI_COLORS = [
   { bg: 'from-emerald-600 to-emerald-500', ring: 'ring-emerald-400/30' },
 ];
 
+const ROUTE_PIE_COLORS = ['#4f46e5', '#7c3aed', '#059669'];
+
 export default function Dashboard() {
   const [data, setData] = useState<KpiData[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [range, setRange] = useState<'current_month' | 'last_month' | 'last_90_days' | 'all'>('current_month');
   const [loading, setLoading] = useState(true);
   const [isMock, setIsMock] = useState(false);
 
   useEffect(() => {
-    fetch('/api/kpi')
-      .then(res => res.json())
-      .then(res => {
-        setData(res.data);
-        setIsMock(res.isMock);
+    Promise.all([
+      fetch('/api/kpi').then(r => r.json()),
+      fetch('/api/analytics').then(r => r.json()),
+    ])
+      .then(([kpiRes, analyticsRes]) => {
+        setData(kpiRes.data || []);
+        setAnalytics(analyticsRes.data || null);
+        setIsMock(kpiRes.isMock);
         setLoading(false);
       })
       .catch(err => {
@@ -34,6 +53,13 @@ export default function Dashboard() {
   const filteredData = filterDataByRange(data, range);
   const metrics = calculateMetrics(filteredData);
 
+  const diagCounts = analytics ? {
+    diagnosed: analytics.diagnosed_count,
+    proposed: analytics.proposed_count,
+    won: analytics.won_count,
+    case_published: analytics.case_published_count,
+  } : null;
+
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
   return (
@@ -43,7 +69,7 @@ export default function Dashboard() {
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-amber-700">
-                <span className="font-bold">Demo Mode:</span> Google Sheets credentials not found. Showing mock data. 
+                <span className="font-bold">Demo Mode:</span> Google Sheets credentials not found. Showing mock data.
                 Configure <code>GOOGLE_SERVICE_ACCOUNT_EMAIL</code>, <code>GOOGLE_PRIVATE_KEY</code>, and <code>GOOGLE_SHEET_ID</code> to persist data.
               </p>
             </div>
@@ -80,9 +106,24 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} />
-          <PrimaryKpiCard label="月間診断実施数" value={metrics.total_diagnosis_done} unit="件" colorIndex={1} />
-          <PrimaryKpiCard label="月間新規契約数" value={metrics.total_contracts_new} unit="件" colorIndex={2} />
-          <PrimaryKpiCard label="月間事例公開数" value={metrics.total_cases_published} unit="件" colorIndex={3} />
+          <PrimaryKpiCard
+            label="月間診断実施数"
+            value={diagCounts ? diagCounts.diagnosed : metrics.total_diagnosis_done}
+            sub={diagCounts ? '案件DB集計' : undefined}
+            unit="件" colorIndex={1}
+          />
+          <PrimaryKpiCard
+            label="月間新規契約数"
+            value={diagCounts ? diagCounts.won : metrics.total_contracts_new}
+            sub={diagCounts ? '案件DB集計' : undefined}
+            unit="件" colorIndex={2}
+          />
+          <PrimaryKpiCard
+            label="月間事例公開数"
+            value={diagCounts ? diagCounts.case_published : metrics.total_cases_published}
+            sub={diagCounts ? '案件DB集計' : undefined}
+            unit="件" colorIndex={3}
+          />
         </div>
       </div>
 
@@ -101,9 +142,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row 1: Funnel + Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Funnel Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium text-gray-900 mb-6">コンバージョンファネル</h3>
           <div className="h-80">
@@ -112,9 +152,9 @@ export default function Dashboard() {
                 data={[
                   { name: '交流会接点', value: metrics.total_leads_meetup },
                   { name: '勉強会申込', value: metrics.total_workshop_attended },
-                  { name: 'AI診断', value: metrics.total_diagnosis_done },
-                  { name: '契約', value: metrics.total_contracts_new },
-                  { name: '事例化', value: metrics.total_cases_published },
+                  { name: 'AI診断', value: diagCounts?.diagnosed ?? metrics.total_diagnosis_done },
+                  { name: '契約', value: diagCounts?.won ?? metrics.total_contracts_new },
+                  { name: '事例化', value: diagCounts?.case_published ?? metrics.total_cases_published },
                 ]}
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
@@ -129,7 +169,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Trend Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-medium text-gray-900 mb-6">週次推移</h3>
           <div className="h-80">
@@ -149,11 +188,75 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Charts Row 2: Route Breakdown + Pipeline (from diagnosis data) */}
+      {analytics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Route Pie */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">ルート別件数</h3>
+            <div className="h-72 flex items-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: ROUTE_LABELS.dispatch, value: analytics.by_route.dispatch },
+                      { name: ROUTE_LABELS.training, value: analytics.by_route.training },
+                      { name: ROUTE_LABELS.aio, value: analytics.by_route.aio },
+                    ]}
+                    cx="50%" cy="50%" innerRadius={60} outerRadius={100}
+                    paddingAngle={3} dataKey="value" label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {ROUTE_PIE_COLORS.map((color, i) => (
+                      <Cell key={i} fill={color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Pipeline */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">案件パイプライン</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { name: '診断完了', value: analytics.diagnosed_count },
+                    { name: '提案済', value: analytics.proposed_count },
+                    { name: '見積済', value: analytics.quoted_count },
+                    { name: '契約', value: analytics.won_count },
+                    { name: '事例公開', value: analytics.case_published_count },
+                    { name: '失注', value: analytics.lost_count },
+                    { name: '保留', value: analytics.on_hold_count },
+                  ]}
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={36}>
+                    {[
+                      '#38bdf8', '#818cf8', '#a78bfa', '#34d399',
+                      '#22c55e', '#f87171', '#94a3b8',
+                    ].map((color, i) => (
+                      <Cell key={i} fill={color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function PrimaryKpiCard({ label, value, unit, colorIndex }: { label: string; value: string | number; unit: string; colorIndex: number }) {
+function PrimaryKpiCard({ label, value, unit, colorIndex, sub }: { label: string; value: string | number; unit: string; colorIndex: number; sub?: string }) {
   const color = PRIMARY_KPI_COLORS[colorIndex];
   return (
     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${color.bg} p-6 shadow-lg ring-1 ${color.ring}`}>
@@ -164,6 +267,7 @@ function PrimaryKpiCard({ label, value, unit, colorIndex }: { label: string; val
         <span className="text-3xl font-bold text-white">{value}</span>
         <span className="text-sm font-medium text-white/70">{unit}</span>
       </dd>
+      {sub && <p className="mt-1 text-xs text-white/50">{sub}</p>}
     </div>
   );
 }

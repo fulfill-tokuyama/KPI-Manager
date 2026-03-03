@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenTool, Settings } from 'lucide-react';
+import { LayoutDashboard, PenTool, ClipboardList } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -8,8 +8,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
-    { href: '/input', label: 'データ入力', icon: PenTool },
-    // { href: '/settings', label: '設定', icon: Settings },
+    { href: '/diagnosis', label: 'AI診断', icon: ClipboardList },
+    { href: '/input', label: 'KPI入力', icon: PenTool },
   ];
 
   return (
@@ -24,7 +24,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname === item.href;
+                  const isActive = item.href === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}

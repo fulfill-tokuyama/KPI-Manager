@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import InputPage from './pages/Input';
+import DiagnosisList from './pages/DiagnosisList';
+import DiagnosisForm from './pages/DiagnosisForm';
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/input" element={<InputPage />} />
+          <Route path="/diagnosis" element={<DiagnosisList />} />
+          <Route path="/diagnosis/:id" element={<DiagnosisForm />} />
         </Routes>
       </Layout>
     </BrowserRouter>
