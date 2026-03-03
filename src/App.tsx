@@ -10,6 +10,7 @@ import InputPage from './pages/Input';
 import DiagnosisList from './pages/DiagnosisList';
 import DiagnosisForm from './pages/DiagnosisForm';
 import Targets from './pages/Targets';
+import Events from './pages/Events';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/input" element={<InputPage />} />
           <Route path="/diagnosis" element={<DiagnosisList />} />
           <Route path="/diagnosis/:id" element={<DiagnosisForm />} />
+          <Route path="/events" element={<Events />} />
           <Route path="/targets" element={<Targets />} />
         </Routes>
       </Layout>

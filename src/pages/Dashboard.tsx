@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { calculateMetrics, filterDataByRange, KpiMetrics } from '../lib/kpi';
 import { KpiData, KpiTarget, TARGET_KPI_LABELS, ROUTE_LABELS } from '../lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Star, Target } from 'lucide-react';
+import { Star, Target, Users, Handshake } from 'lucide-react';
+import type { EventsAnalytics } from '../lib/types';
 
 interface Analytics {
   total: number;
@@ -16,6 +17,7 @@ interface Analytics {
   on_hold_count: number;
   by_route: { dispatch: number; training: number; aio: number };
   by_source: { meetup: number; sns: number; referral: number; other: number };
+  events?: EventsAnalytics;
 }
 
 const PRIMARY_KPI_COLORS = [
@@ -240,6 +242,47 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* 交流会 ROI */}
+      {analytics?.events && (
+        <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Handshake className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-lg font-semibold text-emerald-900">交流会ROI</h2>
+            </div>
+            <Link to="/events" className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-full font-medium transition-colors">
+              <Users className="w-3 h-3" />詳細
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="text-center p-3 rounded-lg bg-white border border-emerald-100 shadow-sm">
+              <div className="text-xs font-medium text-emerald-400 mb-1">参加回数</div>
+              <div className="text-xl font-bold text-emerald-900">{analytics.events.events_count}<span className="text-sm font-medium text-emerald-400 ml-0.5">回</span></div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white border border-emerald-100 shadow-sm">
+              <div className="text-xs font-medium text-emerald-400 mb-1">費用合計</div>
+              <div className="text-xl font-bold text-emerald-900">{analytics.events.cost_sum.toLocaleString()}<span className="text-sm font-medium text-emerald-400 ml-0.5">円</span></div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white border border-emerald-100 shadow-sm">
+              <div className="text-xs font-medium text-emerald-400 mb-1">接点合計</div>
+              <div className="text-xl font-bold text-emerald-900">{analytics.events.contacts_sum}<span className="text-sm font-medium text-emerald-400 ml-0.5">人</span></div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white border border-emerald-100 shadow-sm">
+              <div className="text-xs font-medium text-emerald-400 mb-1">アポ合計</div>
+              <div className="text-xl font-bold text-emerald-900">{analytics.events.appointments_sum}<span className="text-sm font-medium text-emerald-400 ml-0.5">件</span></div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-emerald-50 border border-emerald-200 shadow-sm">
+              <div className="text-xs font-medium text-emerald-500 mb-1">期間CPC</div>
+              <div className="text-xl font-bold text-emerald-800">{analytics.events.cpc != null ? analytics.events.cpc.toLocaleString() : '-'}<span className="text-sm font-medium text-emerald-400 ml-0.5">{analytics.events.cpc != null ? '円' : ''}</span></div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-emerald-50 border border-emerald-200 shadow-sm">
+              <div className="text-xs font-medium text-emerald-500 mb-1">期間CPA</div>
+              <div className="text-xl font-bold text-emerald-800">{analytics.events.cpa != null ? analytics.events.cpa.toLocaleString() : '-'}<span className="text-sm font-medium text-emerald-400 ml-0.5">{analytics.events.cpa != null ? '円' : ''}</span></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Charts Row 2: Route Breakdown + Pipeline (from diagnosis data) */}
       {analytics && (

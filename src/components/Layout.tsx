@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenTool, ClipboardList, Target } from 'lucide-react';
+import { LayoutDashboard, PenTool, ClipboardList, Target, Handshake } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const navItems = [
   { href: '/', label: 'ダッシュボード', shortLabel: 'ホーム', icon: LayoutDashboard },
   { href: '/diagnosis', label: 'AI診断', shortLabel: 'AI診断', icon: ClipboardList },
+  { href: '/events', label: '交流会', shortLabel: '交流会', icon: Handshake },
   { href: '/input', label: 'KPI実績値入力', shortLabel: '実績入力', icon: PenTool },
   { href: '/targets', label: '目標設定', shortLabel: '目標', icon: Target },
 ];
@@ -59,7 +60,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-20">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isNavActive(item.href, location.pathname);

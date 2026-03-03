@@ -46,6 +46,21 @@ const MOCK_DIAGNOSES: DiagnosisRow[] = [
   { id: 'd006', diagnosed_at: '2023-11-15', company_name: 'メディカルプラス', industry: '医療', employee_size: '50-100', source: 'referral', owner: '鈴木', route: 'aio', status: 'in_progress', pains: '["事務効率","予約管理"]', initiatives: '["予約AI","電子カルテ連携"]', impact_note: '受付時間60%短縮', next_action_text: '月次レビュー', next_action_due: '2024-02-15', links: '[]', updated_at: '2024-01-10' },
 ];
 
+// --- Events Types & Mock ---
+interface EventRow {
+  id: string; event_date: string; event_name: string; cost_yen: string;
+  contacts_count: string; appointments_count: string; notes: string;
+  created_at: string; updated_at: string;
+}
+
+const MOCK_EVENTS: EventRow[] = [
+  { id: 'e001', event_date: '2024-01-10', event_name: 'AI活用経営者交流会', cost_yen: '5000', contacts_count: '8', appointments_count: '2', notes: '名刺交換8枚、うち2件アポ確定', created_at: '2024-01-10', updated_at: '2024-01-10' },
+  { id: 'e002', event_date: '2024-01-18', event_name: 'DX推進ビジネスミートアップ', cost_yen: '3000', contacts_count: '5', appointments_count: '1', notes: '', created_at: '2024-01-18', updated_at: '2024-01-18' },
+  { id: 'e003', event_date: '2024-01-25', event_name: 'スタートアップ交流会', cost_yen: '8000', contacts_count: '12', appointments_count: '3', notes: 'VCも参加、良い接点多数', created_at: '2024-01-25', updated_at: '2024-01-25' },
+  { id: 'e004', event_date: '2024-02-05', event_name: '製造業DXセミナー懇親会', cost_yen: '4000', contacts_count: '6', appointments_count: '0', notes: '名刺交換のみ', created_at: '2024-02-05', updated_at: '2024-02-05' },
+  { id: 'e005', event_date: '2026-03-01', event_name: 'IT経営者朝活', cost_yen: '2000', contacts_count: '4', appointments_count: '1', notes: '', created_at: '2026-03-01', updated_at: '2026-03-01' },
+];
+
 const PIPELINE_STATUSES = ['diagnosed','proposed','quoted','won','in_progress','case_ready','case_published'];
 function isStatusAtLeast(status: string, threshold: string): boolean {
   if (status === 'lost' || status === 'on_hold') return false;
@@ -54,6 +69,10 @@ function isStatusAtLeast(status: string, threshold: string): boolean {
 
 function generateId(): string {
   return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function generateEventId(): string {
+  return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 async function startServer() {
@@ -338,6 +357,14 @@ async function startServer() {
     if (from) filtered = filtered.filter(d => d.diagnosed_at >= from);
     if (to) filtered = filtered.filter(d => d.diagnosed_at <= to);
 
+    let filteredEvents = [...MOCK_EVENTS];
+    if (from) filteredEvents = filteredEvents.filter(e => e.event_date >= from);
+    if (to) filteredEvents = filteredEvents.filter(e => e.event_date <= to);
+
+    const cost_sum = filteredEvents.reduce((s, e) => s + (Number(e.cost_yen) || 0), 0);
+    const contacts_sum = filteredEvents.reduce((s, e) => s + (Number(e.contacts_count) || 0), 0);
+    const appointments_sum = filteredEvents.reduce((s, e) => s + (Number(e.appointments_count) || 0), 0);
+
     res.json({
       data: {
         total: filtered.length,
@@ -359,9 +386,78 @@ async function startServer() {
           referral: filtered.filter(d => d.source === 'referral').length,
           other: filtered.filter(d => d.source === 'other').length,
         },
+        events: {
+          events_count: filteredEvents.length,
+          cost_sum,
+          contacts_sum,
+          appointments_sum,
+          cpc: contacts_sum > 0 ? Math.round(cost_sum / contacts_sum) : null,
+          cpa: appointments_sum > 0 ? Math.round(cost_sum / appointments_sum) : null,
+        },
       },
       isMock: true,
     });
+  });
+
+  // --- Events API Routes ---
+
+  app.get('/api/events', (req, res) => {
+    const { from, to, q } = req.query as Record<string, string | undefined>;
+    let filtered = [...MOCK_EVENTS];
+    if (from) filtered = filtered.filter(e => e.event_date >= from);
+    if (to) filtered = filtered.filter(e => e.event_date <= to);
+    if (q) {
+      const ql = q.toLowerCase();
+      filtered = filtered.filter(e => e.event_name.toLowerCase().includes(ql));
+    }
+    filtered.sort((a, b) => b.event_date.localeCompare(a.event_date));
+    res.json({ data: filtered, isMock: true });
+  });
+
+  app.post('/api/events', (req, res) => {
+    const body = req.body;
+    if (!body.event_date || !body.event_name || body.cost_yen == null) {
+      return res.status(400).json({ error: 'event_date, event_name, cost_yen are required' });
+    }
+    const now = new Date().toISOString();
+    const newRow: EventRow = {
+      id: generateEventId(),
+      event_date: body.event_date,
+      event_name: body.event_name,
+      cost_yen: String(Number(body.cost_yen) || 0),
+      contacts_count: String(Number(body.contacts_count) || 0),
+      appointments_count: String(Number(body.appointments_count) || 0),
+      notes: body.notes || '',
+      created_at: now,
+      updated_at: now,
+    };
+    MOCK_EVENTS.push(newRow);
+    res.json({ success: true, data: newRow, isMock: true });
+  });
+
+  app.put('/api/events/:id', (req, res) => {
+    const idx = MOCK_EVENTS.findIndex(e => e.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Not found' });
+    const body = req.body;
+    const now = new Date().toISOString();
+    MOCK_EVENTS[idx] = {
+      ...MOCK_EVENTS[idx],
+      event_date: body.event_date ?? MOCK_EVENTS[idx].event_date,
+      event_name: body.event_name ?? MOCK_EVENTS[idx].event_name,
+      cost_yen: body.cost_yen != null ? String(Number(body.cost_yen) || 0) : MOCK_EVENTS[idx].cost_yen,
+      contacts_count: body.contacts_count != null ? String(Number(body.contacts_count) || 0) : MOCK_EVENTS[idx].contacts_count,
+      appointments_count: body.appointments_count != null ? String(Number(body.appointments_count) || 0) : MOCK_EVENTS[idx].appointments_count,
+      notes: body.notes ?? MOCK_EVENTS[idx].notes,
+      updated_at: now,
+    };
+    res.json({ success: true, data: MOCK_EVENTS[idx], isMock: true });
+  });
+
+  app.delete('/api/events/:id', (req, res) => {
+    const idx = MOCK_EVENTS.findIndex(e => e.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Not found' });
+    MOCK_EVENTS.splice(idx, 1);
+    res.json({ success: true, isMock: true });
   });
 
   // --- Vite Middleware ---

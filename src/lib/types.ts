@@ -132,6 +132,28 @@ export interface Diagnosis {
   updated_at: string;
 }
 
+// ── Event (交流会イベント) ──
+export interface EventRecord {
+  id: string;
+  event_date: string;
+  event_name: string;
+  cost_yen: number;
+  contacts_count: number;
+  appointments_count: number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventsAnalytics {
+  events_count: number;
+  cost_sum: number;
+  contacts_sum: number;
+  appointments_sum: number;
+  cpc: number | null;
+  cpa: number | null;
+}
+
 // Status progression order for pipeline aggregation
 const STATUS_ORDER: DiagnosisStatus[] = [
   'diagnosed', 'proposed', 'quoted', 'won', 'in_progress', 'case_ready', 'case_published',
