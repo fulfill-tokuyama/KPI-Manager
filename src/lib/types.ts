@@ -35,6 +35,22 @@ export const PRIMARY_KPI_KEYS: (keyof Omit<KpiData, 'date'>)[] = [
   'cases_published',
 ];
 
+// ── KPI Targets (月次目標) ──
+export interface KpiTarget {
+  month: string; // YYYY-MM
+  leads_meetup: number;
+  diagnosis_done: number;
+  contracts_new: number;
+  cases_published: number;
+}
+
+export const TARGET_KPI_LABELS: Record<keyof Omit<KpiTarget, 'month'>, string> = {
+  leads_meetup: '経営者接点数',
+  diagnosis_done: '診断実施数',
+  contracts_new: '新規契約数',
+  cases_published: '事例公開数',
+};
+
 // ── Diagnosis (案件) ──
 export const DIAGNOSIS_STATUSES = [
   'diagnosed',

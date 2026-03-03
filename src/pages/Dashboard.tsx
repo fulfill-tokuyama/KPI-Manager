@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { calculateMetrics, filterDataByRange, KpiMetrics } from '../lib/kpi';
-import { KpiData, ROUTE_LABELS } from '../lib/types';
+import { KpiData, KpiTarget, ROUTE_LABELS } from '../lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Star } from 'lucide-react';
+import { Star, Target } from 'lucide-react';
 
 interface Analytics {
   total: number;
@@ -26,21 +27,31 @@ const PRIMARY_KPI_COLORS = [
 
 const ROUTE_PIE_COLORS = ['#4f46e5', '#7c3aed', '#059669'];
 
+function getCurrentMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<KpiData[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [target, setTarget] = useState<KpiTarget | null>(null);
   const [range, setRange] = useState<'current_month' | 'last_month' | 'last_90_days' | 'all'>('current_month');
   const [loading, setLoading] = useState(true);
   const [isMock, setIsMock] = useState(false);
 
   useEffect(() => {
+    const month = getCurrentMonth();
     Promise.all([
       fetch('/api/kpi').then(r => r.json()),
       fetch('/api/analytics').then(r => r.json()),
+      fetch(`/api/targets?month=${month}`).then(r => r.json()),
     ])
-      .then(([kpiRes, analyticsRes]) => {
+      .then(([kpiRes, analyticsRes, targetRes]) => {
         setData(kpiRes.data || []);
         setAnalytics(analyticsRes.data || null);
+        const targets = targetRes.data || [];
+        setTarget(targets.length > 0 ? targets[0] : null);
         setIsMock(kpiRes.isMock);
         setLoading(false);
       })
@@ -100,29 +111,36 @@ export default function Dashboard() {
 
       {/* Primary KPIs */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-          <h2 className="text-lg font-semibold text-gray-900">重要KPI</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+            <h2 className="text-lg font-semibold text-gray-900">重要KPI</h2>
+          </div>
+          {!target && (
+            <Link to="/targets" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+              <Target className="w-3.5 h-3.5" />目標を設定
+            </Link>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} />
+          <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} target={target?.leads_meetup} />
           <PrimaryKpiCard
             label="月間診断実施数"
             value={diagCounts ? diagCounts.diagnosed : metrics.total_diagnosis_done}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={1}
+            unit="件" colorIndex={1} target={target?.diagnosis_done}
           />
           <PrimaryKpiCard
             label="月間新規契約数"
             value={diagCounts ? diagCounts.won : metrics.total_contracts_new}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={2}
+            unit="件" colorIndex={2} target={target?.contracts_new}
           />
           <PrimaryKpiCard
             label="月間事例公開数"
             value={diagCounts ? diagCounts.case_published : metrics.total_cases_published}
             sub={diagCounts ? '案件DB集計' : undefined}
-            unit="件" colorIndex={3}
+            unit="件" colorIndex={3} target={target?.cases_published}
           />
         </div>
       </div>
@@ -256,8 +274,13 @@ export default function Dashboard() {
   );
 }
 
-function PrimaryKpiCard({ label, value, unit, colorIndex, sub }: { label: string; value: string | number; unit: string; colorIndex: number; sub?: string }) {
+function PrimaryKpiCard({ label, value, unit, colorIndex, sub, target }: { label: string; value: string | number; unit: string; colorIndex: number; sub?: string; target?: number }) {
   const color = PRIMARY_KPI_COLORS[colorIndex];
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  const hasTarget = target != null && target > 0;
+  const pct = hasTarget ? Math.min(Math.round((numValue / target!) * 100), 999) : null;
+  const diff = hasTarget ? numValue - target! : null;
+
   return (
     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${color.bg} p-6 shadow-lg ring-1 ${color.ring}`}>
       <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
@@ -266,8 +289,27 @@ function PrimaryKpiCard({ label, value, unit, colorIndex, sub }: { label: string
       <dd className="mt-3 flex items-baseline gap-2">
         <span className="text-3xl font-bold text-white">{value}</span>
         <span className="text-sm font-medium text-white/70">{unit}</span>
+        {diff != null && (
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${diff >= 0 ? 'bg-white/20 text-white' : 'bg-red-400/30 text-red-100'}`}>
+            {diff >= 0 ? '+' : ''}{diff}
+          </span>
+        )}
       </dd>
-      {sub && <p className="mt-1 text-xs text-white/50">{sub}</p>}
+      {hasTarget && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-white/70 mb-1">
+            <span>目標 {target}</span>
+            <span className={`font-semibold ${pct! >= 100 ? 'text-green-200' : 'text-white/90'}`}>{pct}%</span>
+          </div>
+          <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${pct! >= 100 ? 'bg-green-300' : 'bg-white/60'}`}
+              style={{ width: `${Math.min(pct!, 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+      {sub && !hasTarget && <p className="mt-1 text-xs text-white/50">{sub}</p>}
     </div>
   );
 }

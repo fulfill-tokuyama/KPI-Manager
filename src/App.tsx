@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import InputPage from './pages/Input';
 import DiagnosisList from './pages/DiagnosisList';
 import DiagnosisForm from './pages/DiagnosisForm';
+import Targets from './pages/Targets';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/input" element={<InputPage />} />
           <Route path="/diagnosis" element={<DiagnosisList />} />
           <Route path="/diagnosis/:id" element={<DiagnosisForm />} />
+          <Route path="/targets" element={<Targets />} />
         </Routes>
       </Layout>
     </BrowserRouter>

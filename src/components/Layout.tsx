@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PenTool, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, PenTool, ClipboardList, Target } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
     { href: '/diagnosis', label: 'AI診断', icon: ClipboardList },
     { href: '/input', label: 'KPI入力', icon: PenTool },
+    { href: '/targets', label: '目標設定', icon: Target },
   ];
 
   return (

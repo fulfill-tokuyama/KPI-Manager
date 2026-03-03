@@ -238,6 +238,32 @@ async function startServer() {
   });
 
 
+  // --- KPI Targets Mock ---
+  const MOCK_TARGETS = [
+    { month: '2024-01', leads_meetup: 30, diagnosis_done: 5, contracts_new: 3, cases_published: 1 },
+    { month: '2024-02', leads_meetup: 35, diagnosis_done: 6, contracts_new: 3, cases_published: 2 },
+    { month: '2024-03', leads_meetup: 40, diagnosis_done: 8, contracts_new: 4, cases_published: 2 },
+    { month: '2026-03', leads_meetup: 25, diagnosis_done: 8, contracts_new: 4, cases_published: 2 },
+  ];
+
+  app.get('/api/targets', (req, res) => {
+    const { month } = req.query as Record<string, string | undefined>;
+    const data = month ? MOCK_TARGETS.filter(t => t.month === month) : MOCK_TARGETS;
+    res.json({ data, isMock: true });
+  });
+
+  app.post('/api/targets', (req, res) => {
+    const body = req.body;
+    if (!body.month) return res.status(400).json({ error: 'month is required' });
+    const idx = MOCK_TARGETS.findIndex(t => t.month === body.month);
+    if (idx >= 0) {
+      MOCK_TARGETS[idx] = body;
+    } else {
+      MOCK_TARGETS.push(body);
+    }
+    res.json({ success: true, data: body, isMock: true });
+  });
+
   // --- Diagnosis API Routes ---
 
   app.get('/api/diagnosis', (req, res) => {
