@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { calculateMetrics, filterDataByRange, KpiMetrics } from '../lib/kpi';
 import { KpiData } from '../lib/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Star } from 'lucide-react';
+
+const PRIMARY_KPI_COLORS = [
+  { bg: 'from-indigo-600 to-indigo-500', ring: 'ring-indigo-400/30' },
+  { bg: 'from-violet-600 to-violet-500', ring: 'ring-violet-400/30' },
+  { bg: 'from-blue-600 to-blue-500', ring: 'ring-blue-400/30' },
+  { bg: 'from-emerald-600 to-emerald-500', ring: 'ring-emerald-400/30' },
+];
 
 export default function Dashboard() {
   const [data, setData] = useState<KpiData[]>([]);
@@ -26,10 +33,6 @@ export default function Dashboard() {
 
   const filteredData = filterDataByRange(data, range);
   const metrics = calculateMetrics(filteredData);
-
-  // Helper for comparison (simplified: compare with previous period of same length would be ideal, 
-  // but for MVP just showing current value is fine, or simple hardcoded comparison if needed)
-  // We will just display the values for now.
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
@@ -69,22 +72,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" />
-        <KpiCard label="勉強会申込率" value={(metrics.workshop_application_rate * 100).toFixed(1)} unit="%" />
-        <KpiCard label="勉強会参加企業数" value={metrics.total_workshop_attended} unit="社" />
-        <KpiCard label="AI診断移行率" value={(metrics.diagnosis_conversion_rate * 100).toFixed(1)} unit="%" />
-        
-        <KpiCard label="AI診断実施数" value={metrics.total_diagnosis_done} unit="件" />
-        <KpiCard label="バックエンド契約率" value={(metrics.contract_rate * 100).toFixed(1)} unit="%" />
-        <KpiCard label="新規契約数" value={metrics.total_contracts_new} unit="件" highlight />
-        <KpiCard label="月間MRR増分" value={metrics.total_mrr.toLocaleString()} unit="円" highlight />
+      {/* Primary KPIs */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+          <h2 className="text-lg font-semibold text-gray-900">重要KPI</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PrimaryKpiCard label="月間経営者接点数" value={metrics.total_leads_meetup} unit="件" colorIndex={0} />
+          <PrimaryKpiCard label="月間診断実施数" value={metrics.total_diagnosis_done} unit="件" colorIndex={1} />
+          <PrimaryKpiCard label="月間新規契約数" value={metrics.total_contracts_new} unit="件" colorIndex={2} />
+          <PrimaryKpiCard label="月間事例公開数" value={metrics.total_cases_published} unit="件" colorIndex={3} />
+        </div>
+      </div>
 
-        <KpiCard label="平均単価" value={Math.round(metrics.average_unit_price).toLocaleString()} unit="円" />
-        <KpiCard label="継続率" value={(metrics.retention_rate * 100).toFixed(1)} unit="%" />
-        <KpiCard label="事例公開数" value={metrics.total_cases_published} unit="件" />
-        <KpiCard label="紹介発生数" value={metrics.total_referrals} unit="件" />
+      {/* Secondary KPI Cards */}
+      <div>
+        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">その他の指標</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard label="勉強会申込率" value={(metrics.workshop_application_rate * 100).toFixed(1)} unit="%" />
+          <KpiCard label="勉強会参加企業数" value={metrics.total_workshop_attended} unit="社" />
+          <KpiCard label="AI診断移行率" value={(metrics.diagnosis_conversion_rate * 100).toFixed(1)} unit="%" />
+          <KpiCard label="バックエンド契約率" value={(metrics.contract_rate * 100).toFixed(1)} unit="%" />
+          <KpiCard label="月間MRR増分" value={metrics.total_mrr.toLocaleString()} unit="円" />
+          <KpiCard label="平均単価" value={Math.round(metrics.average_unit_price).toLocaleString()} unit="円" />
+          <KpiCard label="継続率" value={(metrics.retention_rate * 100).toFixed(1)} unit="%" />
+          <KpiCard label="紹介発生数" value={metrics.total_referrals} unit="件" />
+        </div>
       </div>
 
       {/* Charts Row */}
@@ -97,7 +111,7 @@ export default function Dashboard() {
               <BarChart
                 data={[
                   { name: '交流会接点', value: metrics.total_leads_meetup },
-                  { name: '勉強会申込', value: metrics.total_workshop_attended }, // Using attended as proxy for funnel step usually
+                  { name: '勉強会申込', value: metrics.total_workshop_attended },
                   { name: 'AI診断', value: metrics.total_diagnosis_done },
                   { name: '契約', value: metrics.total_contracts_new },
                   { name: '事例化', value: metrics.total_cases_published },
@@ -126,9 +140,10 @@ export default function Dashboard() {
                 <YAxis />
                 <Tooltip labelFormatter={(str) => new Date(str).toLocaleDateString()} />
                 <Legend />
-                <Line type="monotone" dataKey="leads_meetup" name="接点数" stroke="#94a3b8" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="diagnosis_done" name="診断数" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="contracts_new" name="契約数" stroke="#4f46e5" strokeWidth={2} />
+                <Line type="monotone" dataKey="leads_meetup" name="接点数" stroke="#4f46e5" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="diagnosis_done" name="診断数" stroke="#7c3aed" strokeWidth={2} />
+                <Line type="monotone" dataKey="contracts_new" name="契約数" stroke="#2563eb" strokeWidth={2} />
+                <Line type="monotone" dataKey="cases_published" name="事例数" stroke="#059669" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -138,19 +153,28 @@ export default function Dashboard() {
   );
 }
 
-function KpiCard({ label, value, unit, highlight = false }: { label: string, value: string | number, unit: string, highlight?: boolean }) {
+function PrimaryKpiCard({ label, value, unit, colorIndex }: { label: string; value: string | number; unit: string; colorIndex: number }) {
+  const color = PRIMARY_KPI_COLORS[colorIndex];
   return (
-    <div className={`p-5 rounded-xl border ${highlight ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-gray-200'} shadow-sm`}>
-      <dt className={`text-sm font-medium truncate ${highlight ? 'text-indigo-600' : 'text-gray-500'}`}>
-        {label}
-      </dt>
+    <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${color.bg} p-6 shadow-lg ring-1 ${color.ring}`}>
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+      <div className="absolute bottom-0 left-0 -mb-6 -ml-6 h-20 w-20 rounded-full bg-white/5" />
+      <dt className="text-sm font-medium text-white/80">{label}</dt>
+      <dd className="mt-3 flex items-baseline gap-2">
+        <span className="text-3xl font-bold text-white">{value}</span>
+        <span className="text-sm font-medium text-white/70">{unit}</span>
+      </dd>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, unit }: { label: string; value: string | number; unit: string }) {
+  return (
+    <div className="p-5 rounded-xl border border-gray-200 bg-white shadow-sm">
+      <dt className="text-sm font-medium truncate text-gray-500">{label}</dt>
       <dd className="mt-2 flex items-baseline">
-        <span className={`text-2xl font-semibold ${highlight ? 'text-indigo-900' : 'text-gray-900'}`}>
-          {value}
-        </span>
-        <span className={`ml-2 text-sm font-medium ${highlight ? 'text-indigo-600' : 'text-gray-500'}`}>
-          {unit}
-        </span>
+        <span className="text-2xl font-semibold text-gray-900">{value}</span>
+        <span className="ml-2 text-sm font-medium text-gray-500">{unit}</span>
       </dd>
     </div>
   );

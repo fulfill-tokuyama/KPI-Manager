@@ -26,3 +26,10 @@ export const KPI_LABELS: Record<keyof Omit<KpiData, 'date'>, string> = {
   referrals: '紹介発生数',
   leads_from_case: '事例経由リード数',
 };
+
+export const PRIMARY_KPI_KEYS: (keyof Omit<KpiData, 'date'>)[] = [
+  'leads_meetup',
+  'diagnosis_done',
+  'contracts_new',
+  'cases_published',
+];

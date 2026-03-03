@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { KpiData, KPI_LABELS } from '../lib/types';
-import { Save, Trash2, Plus } from 'lucide-react';
+import { KpiData, KPI_LABELS, PRIMARY_KPI_KEYS } from '../lib/types';
+import { Save, Trash2, Star } from 'lucide-react';
 
 const INITIAL_DATA: KpiData = {
   date: new Date().toISOString().split('T')[0],
@@ -131,8 +131,34 @@ export default function InputPage() {
           )}
         </div>
 
+        {/* Primary KPI Fields */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <span className="text-sm font-semibold text-gray-900">重要KPI</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-indigo-50/60 border border-indigo-200">
+            {PRIMARY_KPI_KEYS.map((key) => (
+              <div key={key}>
+                <label className="block text-sm font-semibold text-indigo-700 mb-1">{KPI_LABELS[key]}</label>
+                <input
+                  type="number"
+                  name={key}
+                  value={(formData as any)[key]}
+                  onChange={handleChange}
+                  min="0"
+                  className="block w-full rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Other KPI Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {Object.entries(KPI_LABELS).map(([key, label]) => (
+          {Object.entries(KPI_LABELS)
+            .filter(([key]) => !PRIMARY_KPI_KEYS.includes(key as any))
+            .map(([key, label]) => (
             <div key={key}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
               <input
